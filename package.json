@@ -1,4 +1,7 @@
-
+"scripts": {
+     "build": "react-scripts build",
+     "start": "react-scripts start"
+},
 {
   "short_name": "To-Do App",
   "name": "Advanced To-Do Application",
