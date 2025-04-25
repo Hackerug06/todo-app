@@ -1,0 +1,7 @@
+[build]
+     command = "npm run build"
+     publish = "build"
+   
+   [build.environment]
+     GO_VERSION = "1.19"  # Explicitly set required Go version
+     NODE_VERSION = "18.x" # Recommended for React apps
