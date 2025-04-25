@@ -1,63 +1,103 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { format } from 'date-fns';
+import { createSlice, nanoid } from '@reduxjs/toolkit';
 
 const initialState = {
   tasks: JSON.parse(localStorage.getItem('tasks')) || [],
-  status: 'idle',
-  error: null,
+  filter: 'all', // 'all', 'active', 'completed'
 };
 
 const tasksSlice = createSlice({
   name: 'tasks',
   initialState,
   reducers: {
-    taskAdded: (state, action) => {
-      state.tasks.push(action.payload);
-      localStorage.setItem('tasks', JSON.stringify(state.tasks));
+    addTask: {
+      reducer(state, action) {
+        state.tasks.push(action.payload);
+        localStorage.setItem('tasks', JSON.stringify(state.tasks));
+      },
+      prepare({ title, description, dueDate, dueTime, priority }) {
+        return {
+          payload: {
+            id: nanoid(),
+            title,
+            description,
+            dueDate,
+            dueTime,
+            priority,
+            status: 'pending',
+            subtasks: [],
+            createdAt: new Date().toISOString(),
+          },
+        };
+      },
     },
-    taskDeleted: (state, action) => {
+    updateTask(state, action) {
+      const index = state.tasks.findIndex(task => task.id === action.payload.id);
+      if (index !== -1) {
+        state.tasks[index] = { ...state.tasks[index], ...action.payload };
+        localStorage.setItem('tasks', JSON.stringify(state.tasks));
+      }
+    },
+    deleteTask(state, action) {
       state.tasks = state.tasks.filter(task => task.id !== action.payload);
       localStorage.setItem('tasks', JSON.stringify(state.tasks));
     },
-    taskUpdated: (state, action) => {
-      const { id, ...updatedFields } = action.payload;
-      const existingTask = state.tasks.find(task => task.id === id);
-      if (existingTask) {
-        Object.assign(existingTask, updatedFields);
-      }
-      localStorage.setItem('tasks', JSON.stringify(state.tasks));
-    },
-    subtaskAdded: (state, action) => {
-      const { taskId, subtask } = action.payload;
-      const task = state.tasks.find(t => t.id === taskId);
+    toggleTaskStatus(state, action) {
+      const task = state.tasks.find(task => task.id === action.payload);
       if (task) {
-        if (!task.subtasks) task.subtasks = [];
-        task.subtasks.push(subtask);
+        task.status = task.status === 'completed' ? 'pending' : 'completed';
+        localStorage.setItem('tasks', JSON.stringify(state.tasks));
       }
-      localStorage.setItem('tasks', JSON.stringify(state.tasks));
     },
-    subtaskToggled: (state, action) => {
+    addSubtask(state, action) {
+      const { taskId, text } = action.payload;
+      const task = state.tasks.find(task => task.id === taskId);
+      if (task) {
+        task.subtasks.push({
+          id: nanoid(),
+          text,
+          completed: false
+        });
+        localStorage.setItem('tasks', JSON.stringify(state.tasks));
+      }
+    },
+    toggleSubtask(state, action) {
       const { taskId, subtaskId } = action.payload;
-      const task = state.tasks.find(t => t.id === taskId);
-      if (task && task.subtasks) {
-        const subtask = task.subtasks.find(s => s.id === subtaskId);
+      const task = state.tasks.find(task => task.id === taskId);
+      if (task) {
+        const subtask = task.subtasks.find(sub => sub.id === subtaskId);
         if (subtask) {
           subtask.completed = !subtask.completed;
+          localStorage.setItem('tasks', JSON.stringify(state.tasks));
         }
       }
-      localStorage.setItem('tasks', JSON.stringify(state.tasks));
     },
+    setFilter(state, action) {
+      state.filter = action.payload;
+    }
   },
 });
 
-export const { 
-  taskAdded, 
-  taskDeleted, 
-  taskUpdated, 
-  subtaskAdded,
-  subtaskToggled
+export const {
+  addTask,
+  updateTask,
+  deleteTask,
+  toggleTaskStatus,
+  addSubtask,
+  toggleSubtask,
+  setFilter
 } = tasksSlice.actions;
 
-export default tasksSlice.reducer;
+export const selectAllTasks = (state) => state.tasks.tasks;
+export const selectFilteredTasks = (state) => {
+  const { tasks, filter } = state.tasks;
+  switch (filter) {
+    case 'active':
+      return tasks.filter(task => task.status !== 'completed');
+    case 'completed':
+      return tasks.filter(task => task.status === 'completed');
+    default:
+      return tasks;
+  }
+};
 
-export const selectAllTasks = state => state.tasks.tasks;
+export default tasksSlice.reducer;
