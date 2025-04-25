@@ -1,33 +1,30 @@
-export function register(config) {
+export function register() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
 
-      navigator.serviceWorker.register(swUrl).then(registration => {
-        registration.onupdatefound = () => {
-          const installingWorker = registration.installing;
-          if (installingWorker == null) {
-            return;
-          }
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === 'installed') {
-              if (navigator.serviceWorker.controller) {
-                console.log('New content is available and will be used when all tabs are closed.');
-                if (config && config.onUpdate) {
-                  config.onUpdate(registration);
-                }
-              } else {
-                console.log('Content is cached for offline use.');
-                if (config && config.onSuccess) {
-                  config.onSuccess(registration);
+      navigator.serviceWorker.register(swUrl)
+        .then(registration => {
+          console.log('ServiceWorker registration successful');
+          
+          registration.onupdatefound = () => {
+            const installingWorker = registration.installing;
+            if (installingWorker == null) return;
+            
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  console.log('New content is available; please refresh.');
+                } else {
+                  console.log('Content is cached for offline use.');
                 }
               }
-            }
+            };
           };
-        };
-      }).catch(error => {
-        console.error('Error during service worker registration:', error);
-      });
+        })
+        .catch(error => {
+          console.error('Error during service worker registration:', error);
+        });
     });
   }
 }
@@ -38,4 +35,4 @@ export function unregister() {
       registration.unregister();
     });
   }
-                  }
+}
